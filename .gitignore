@@ -1,0 +1,15 @@
+*.pt
+*.bin
+__pycache__
+data/
+save_models/
+results/
+*log*
+*result*
+**/not-upload
+.history/
+.vscode/
+run_log/
+tree-sitter-*/
+.cache/
+tensorboard/
