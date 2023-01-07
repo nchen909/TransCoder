@@ -28,8 +28,8 @@ class E2D_Model_Prefix(PushToHubFriendlyModel):
         self.tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model_name_or_path, use_fast=False)
         
         # self.code_prefix_tokens, self.code_prefix_matrix = get_graph_metadata(self.args,self.tokenizer)
-        self.code_prefix_tokens = torch.arange(self.mid_dim).long().cuda()
-        self.code_prefix_matrix = torch.arange(self.mid_dim).long().cuda()
+        self.code_prefix_tokens = torch.arange(self.mid_dim).long().to(args.device)
+        self.code_prefix_matrix = torch.arange(self.mid_dim).long().to(args.device)
         
         # self.code_prefix_matrix = torch.tensor(self.code_prefix_matrix, dtype=torch.long).cuda()
         # self.code_prefix_tokens = self.code_prefix_tokens.unsqueeze(0).expand(self.args.batch_size, -1)

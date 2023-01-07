@@ -86,7 +86,7 @@ def add_args(parser):
     # parser.add_argument('--upgraded_ast',  default=1, type=int, choices=[0,1],
     #                 help="whether to use upgraded ast")
     parser.add_argument('--few_shot',  default=64, type=int,
-                    help="use k shot, -1 for full data")
+                    help="use k shot, -1 for full data")#####rename to Sample
 
     parser.add_argument("--prefix_tuning", default=False, type=str,
                     help="parameter-efficient prefix tuning, pass_tuning refers to GAT prefix,\
@@ -133,8 +133,10 @@ def add_args(parser):
             help="do meta task",
             choices=['cls2translate','translate2cls','cls2summarize','summarize2cls','translate2summarize','summarize2translate',
             'cross2java','cross2php','cross2ruby','cross2python','cross2go','cross2javascript'])
-    parser.add_argument("--shared_dir", default='save_models', type=str,
+    parser.add_argument("--shared_dir", default='save_models/shared', type=str,
                     help="directory to store shared state dict list")
+    parser.add_argument("--origin_model_dir", default='data/huggingface_locals', type=str,
+                    help="directory to store origin model")
     parser.add_argument("--meta_epochs", default=5, type=int)
 
     args = parser.parse_args()
@@ -240,7 +242,7 @@ def set_hyperparas(args):
         else:
             args.batch_size = 16 if not torch.cuda.is_available() else 16 * torch.cuda.device_count()
         
-        args.batch_size = 2#####################################################
+        # args.batch_size = 2#####################################################
         if args.qiangtamadeka:
             args.batch_size = 16
             args.num_train_epochs = 10000

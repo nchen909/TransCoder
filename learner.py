@@ -46,7 +46,7 @@ def get_meta_task_list(args):
     train_task,test_task=meta_task.split('2')
     if train_task=='cross':
         #cross_language
-        lang=['java','php','ruby','python','js','go']
+        lang=['java','php','ruby','python','javascript','go']
         lang.remove(test_task)
         for i in lang:
             meta_train_task_list.append(('summarize',i))
@@ -56,7 +56,7 @@ def get_meta_task_list(args):
             meta_train_task_list.append(('defect',''))
             meta_train_task_list.append(('clone',''))
         elif train_task=='summarize':
-            lang=['java','php','ruby','python','js','go']
+            lang=['java','php','ruby','python','javascript','go']
             for i in lang:
                 meta_train_task_list.append(('summarize',lang))
         elif train_task=='translate':
@@ -843,7 +843,7 @@ class Learner():
             if args.task in ['summarize', 'translate', 'refine', 'generate','complete']:
                 for criteria in ['best-bleu', 'best-ppl']:  # 'best-bleu', 'best-ppl', 'last'
                     file = os.path.join(
-                        args.output_dir, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                        args.origin_model_dir,args.task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
                     logger.info("Reload model from {}".format(file))
                     
                     model = model.module if hasattr(model, 'module') else model
@@ -871,7 +871,8 @@ class Learner():
                             f.write(result_str)
             elif args.task in ['defect']:
                 for criteria in ['best-acc']:
-                    file = os.path.join(args.output_dir, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                    file = os.path.join(
+                        args.origin_model_dir,args.task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
                     logger.info("Reload model from {}".format(file))
 
                     model = model.module if hasattr(model, 'module') else model
@@ -896,7 +897,8 @@ class Learner():
                                 criteria, result['eval_acc']))
             elif args.task in ['clone']:
                 for criteria in ['best-f1']:
-                    file = os.path.join(args.output_dir, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                    file = os.path.join(
+                        args.origin_model_dir,args.task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
                     logger.info("Reload model from {}".format(file))
                     
                     model = model.module if hasattr(model, 'module') else model
@@ -1003,8 +1005,9 @@ if __name__ == "__main__":
     # logger.info("*********************************")
     args.model='codet5'
     args.prefix_tuning='prefix_tuning'
-    args.few_shot = 64
+    args.few_shot = 10000
     args.fix_model_param = 0
+    args.meta_epochs = 5
     learner = Learner(args)
     learner.meta_train()
     learner.meta_test()
