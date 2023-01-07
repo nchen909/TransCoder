@@ -329,24 +329,27 @@ class Learner():
 
     def load_shared(self):
         import os
-        for i in range(os.listdir(self.args.shared_dir)):
+        for i in range(len(os.listdir(self.args.shared_dir))):
             path='{}/shared{}.pth'.format(self.args.shared_dir,i)
             self.shared_state_dict_list.append(torch.load(path))
-        print("Load shared state dict from:",path)
+            print("Load shared state dict from:",path)
     def save_shared(self):
-        for index, shared_state_dict in self.shared_state_dict_list:
-            path='{}/shared{}.pth'.format(self.args.shared_dir,index)
+        i=0
+        for shared_state_dict in self.shared_state_dict_list:
+            path='{}/shared{}.pth'.format(self.args.shared_dir,i)
             torch.save(shared_state_dict, path)
-        print("Save shared state dict to:",path)
+            i+=1
+            print("Save shared state dict to:",path)
         
     def get_shared_size(self,shared_state_dict_list):
         model_size = 0
         for state_dict in shared_state_dict_list:
-            model_parameters = state_dict.values
+            model_parameters = state_dict.values()
             model_size += sum([np.prod(p.size()) for p in model_parameters])
         return "{}M".format(round(model_size / 1e+6,3))
     def learn(self):
         args=self.args
+        cur_epoch=self.args.cur_epoch
         t0 = time.time()
         if args.task in ['summarize', 'translate', 'refine', 'generate','complete']:
             config, model, tokenizer = bulid_or_load_gen_model(args,shared_state_dict_list=self.get_shared())
@@ -413,7 +416,7 @@ class Learner():
                 global_step, best_bleu_em, best_ppl = 0, -1, 1e6
                 not_loss_dec_cnt, not_bleu_em_inc_cnt = 0, 0 if args.do_eval_bleu else 1e6
 
-                for cur_epoch in [args.start_epoch]:
+                for _ in [args.start_epoch]:
                     bar = tqdm(train_dataloader, total=len(
                         train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
@@ -601,7 +604,7 @@ class Learner():
                 global_step, best_acc = 0, 0
                 not_acc_inc_cnt = 0
                 is_early_stop = False
-                for cur_epoch in [args.start_epoch]:
+                for _ in [args.start_epoch]:
                     bar = tqdm(train_dataloader, total=len(train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
                     model.train()
@@ -716,7 +719,7 @@ class Learner():
                 global_step, best_f1 = 0, 0
                 not_f1_inc_cnt = 0
                 is_early_stop = False
-                for cur_epoch in [args.start_epoch]:
+                for _ in [args.start_epoch]:
                     bar = tqdm(train_dataloader, total=len(train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
                     model.train()
@@ -950,19 +953,33 @@ class Learner():
     def few_shot_train(self, model, epoch):
         pass
     def meta_train(self):
+        logger.info("Start Meta Train:")
+        logger.info("Backbone model: "+str(args.model_name))
         for cur_epoch in range(self.args.start_epoch, int(self.args.meta_epochs)):
+            self.args.cur_epoch = cur_epoch
             meta_train_task_list,_ = get_meta_task_list(self.args)
             for cur_task in meta_train_task_list:
                 self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
                 set_hyperparas(self.args)
+                logger.info("Meta Train:")
+                logger.info("Sample size: "+str(args.few_shot))
+                logger.info("args.task: "+str(args.task))
+                logger.info("args.sub_task: "+str(args.sub_task))
                 self.train()
 
     def meta_test(self):
+        logger.info("Start Meta Train:")
+        logger.info("Backbone model: "+str(args.model_name))
+        args.few_shot = -1
         for cur_epoch in range(self.args.start_epoch, int(self.args.meta_epochs)):
+            self.args.cur_epoch = cur_epoch
             _,meta_test_task_list = get_meta_task_list(self.args)
             for cur_task in meta_test_task_list:
                 self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
                 set_hyperparas(self.args)
+                logger.info("Meta Test:")
+                logger.info("args.task: "+str(args.task))
+                logger.info("args.sub_task: "+str(args.sub_task))
                 self.test()
         
 
@@ -987,6 +1004,7 @@ if __name__ == "__main__":
     args.model='codet5'
     args.prefix_tuning='prefix_tuning'
     args.few_shot = 64
+    args.fix_model_param = 0
     learner = Learner(args)
     learner.meta_train()
     learner.meta_test()
