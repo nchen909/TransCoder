@@ -19,6 +19,11 @@ from GraphMetadata import GraphMetadata
 import multiprocessing
 logger = logging.getLogger(__name__)
 
+def sample_examples(examples,num):
+    if len(examples) >= num and num !=-1:
+        return random.sample(examples, num)
+    else:
+        return examples
 def get_lang_by_task(task, sub_task):
     if task in ['summarize','complete']:
         return sub_task
@@ -419,12 +424,12 @@ def load_and_cache_gen_data(args, filename, pool, tokenizer, split_tag, only_src
     
     # if is_sample and is_attention:
     #     if args.few_shot <= len(examples):
-    #         examples = random.sample(examples, min(3000, len(examples)) if args.few_shot == -1 else args.few_shot)
+    #         examples = sample_examples(examples, min(3000, len(examples)) if args.few_shot == -1 else args.few_shot)
     #     else:
     #         # for CodeTrans dataset, dev&test example len = 500, may smaller than few-shot case
     #         # we compensate some examples from train set to fill examples to args.few_shot
     #         examples_train = read_examples(args.train_filename, -1, args.task)
-    #         examples += random.sample(examples_train, args.few_shot - len(examples))
+    #         examples += sample_examples(examples_train, args.few_shot - len(examples))
     #         assert len(examples) == args.few_shot
         
     #     args.warmup_steps = len(examples) / 100
@@ -436,14 +441,14 @@ def load_and_cache_gen_data(args, filename, pool, tokenizer, split_tag, only_src
             # elif args.task=='refine':#evalnum_before5000
             #     sample_num = min(1500, len(examples)//4)
             if split_tag=='train':
-                examples = random.sample(examples, sample_num if args.few_shot == -1 else args.few_shot)
+                examples = sample_examples(examples, sample_num if args.few_shot == -1 else args.few_shot)
             else:
-                examples = random.sample(examples, sample_num if args.few_shot == -1 else args.few_shot)
+                examples = sample_examples(examples, sample_num if args.few_shot == -1 else args.few_shot)
         else:
             # for CodeTrans dataset, dev&test example len = 500, may smaller than few-shot case
             # we compensate some examples from train set to fill examples to args.few_shot
             examples_train = read_examples(args.train_filename, -1, args.task)
-            examples += random.sample(examples_train, args.few_shot - len(examples))
+            examples += sample_examples(examples_train, args.few_shot - len(examples))
             assert len(examples) == args.few_shot
         args.warmup_steps = len(examples) / 100
     if split_tag == 'train':
@@ -526,7 +531,7 @@ def load_and_cache_gen_data(args, filename, pool, tokenizer, split_tag, only_src
 #                     args.data_dir, args.task, args.sub_task, split_tag)
 #                 examples = read_examples(filename, args.data_num, args.task)
 #                 if is_sample:
-#                     examples = random.sample(
+#                     examples = sample_examples(
 #                         examples, min(5000, len(examples)))
 #                 if split_tag == 'train':
 #                     calc_stats(examples, tokenizer, is_tokenize=True)
@@ -758,11 +763,11 @@ class TextDataset_POJ104(Dataset):
         labels = list(self.label_examples)
         labels.remove(label)
         while True:
-            shuffle_example = random.sample(self.label_examples[label],1)[0]
+            shuffle_example = sample_examples(self.label_examples[label],1)[0]
             if shuffle_example.index != index:
                 p_example = shuffle_example
                 break
-        n_example = random.sample(self.label_examples[random.sample(labels,1)[0]],1)[0]
+        n_example = sample_examples(self.label_examples[sample_examples(labels,1)[0]],1)[0]
         
         return (torch.tensor(self.examples[i].input_ids),torch.tensor(p_example.input_ids),
                 torch.tensor(n_example.input_ids),torch.tensor(label))
@@ -786,11 +791,11 @@ class TextDataset_POJ104(Dataset):
 #         labels = list(self.label_examples)
 #         labels.remove(label)
 #         while True:
-#             shuffle_example = random.sample(self.label_examples[label],1)[0]
+#             shuffle_example = sample_examples(self.label_examples[label],1)[0]
 #             if shuffle_example.example_id != index:
 #                 p_example = shuffle_example
 #                 break
-#         n_example = random.sample(self.label_examples[random.sample(labels,1)[0]],1)[0]
+#         n_example = sample_examples(self.label_examples[sample_examples(labels,1)[0]],1)[0]
         
 #         return (torch.tensor(self.examples[i].source_ids),torch.tensor(p_example.source_ids),
 #                 torch.tensor(n_example.source_ids),torch.tensor(label))
@@ -809,12 +814,12 @@ def load_and_cache_clone_data(args, filename, pool, tokenizer, split_tag, is_sam
                                 '_all' if args.data_num == -1 else '_%d' % args.data_num)
     examples = read_examples(filename, -1, args.task)
     if is_sample or args.is_clone_sample:
-        examples = random.sample(examples,  int(len(examples) * 0.1))
+        examples = sample_examples(examples,  int(len(examples) * 0.1))
     if split_tag!='test' and args.few_shot!=-1:
         examples_True = [e for e in examples if e.label == 1]
         examples_False = [e for e in examples if e.label == 0]
-        examples_True = random.sample(examples_True,args.few_shot)
-        examples_False = random.sample(examples_False,args.few_shot)
+        examples_True = sample_examples(examples_True,args.few_shot)
+        examples_False = sample_examples(examples_False,args.few_shot)
         examples = examples_True + examples_False
 
     if split_tag!='test' and args.few_shot != -1:
@@ -857,12 +862,12 @@ def load_and_cache_defect_data(args, filename, pool, tokenizer, split_tag, is_sa
     examples = read_examples(filename, -1, args.task)
     if is_sample:
         sample_num = min(5000, len(examples))
-        examples = random.sample(examples, sample_num)
+        examples = sample_examples(examples, sample_num)
     elif split_tag!='test' and args.few_shot != -1:
         examples_True = [e for e in examples if e.target == 1]
         examples_False = [e for e in examples if e.target == 0]
-        examples_True = random.sample(examples_True,args.few_shot)
-        examples_False = random.sample(examples_False,args.few_shot)
+        examples_True = sample_examples(examples_True,args.few_shot)
+        examples_False = sample_examples(examples_False,args.few_shot)
         examples = examples_True + examples_False
     calc_stats(examples, tokenizer, is_tokenize=True)
     if os.path.exists(cache_fn) and args.few_shot == -1:

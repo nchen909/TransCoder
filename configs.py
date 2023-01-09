@@ -139,10 +139,10 @@ def add_args(parser):
                     help="directory to store origin model")
     parser.add_argument("--meta_epochs", default=5, type=int,
                     help="meta epochs for source task mata train")
-    parser.add_argument("--test_sample_rate", default=0.5, type=float,
+    parser.add_argument("--test_sample_rate", default=1, type=float,
                     help="construct test_sample_rate of test sample as target task to simulate low resource scene, 0.5 for 50% of target task, 1 for full task")
     parser.add_argument("--prefix_type", default='tuned', type=str,
-                    help="how to prefix for test, tuned for meta_trained",choices=['tuned','random','none'])
+                    help="how to prefix for test, tuned for meta_trained",choices=['tuned','random','False'])
     parser.add_argument("--do_meta_train", default=1, type=int,
                     help="whether do meta train")
     parser.add_argument("--do_meta_test", default=1, type=int,

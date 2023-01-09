@@ -39,19 +39,20 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def get_sample_size(args,type='test'):
+def get_sample_size(args,type='train'):
+    print("args.task,args.sub_task",args.task,args.sub_task)
     if args.task=='summarize':
-        if args.subtask=='python':
+        if args.sub_task=='python':
             data_size=[251830,13914,14918]
-        elif args.subtask=='java':
+        elif args.sub_task=='java':
             data_size=[164923,5183,10955]
-        elif args.subtask=='javascript':
+        elif args.sub_task=='javascript':
             data_size=[58025,3885,3291]
-        elif args.subtask=='php':
+        elif args.sub_task=='php':
             data_size=[241241,12982,14014]
-        elif args.subtask=='ruby':
+        elif args.sub_task=='ruby':
             data_size=[24927,1400,1261]
-        elif args.subtask=='go':
+        elif args.sub_task=='go':
             data_size=[167288,7325,8122]
     elif args.task=='defect':
         data_size=[21800,2732,2732]
@@ -313,10 +314,10 @@ class Learner():
         self.args=args
         meta_task=self.args.meta_task
         self.train_task,self.test_task=meta_task.split('2')
-        if self.train_task in ['cross','cls']:
-            self.args.meta_epochs = 2#6
-        elif self.train_task in ['summarize','translate']:
-            self.args.meta_epochs = 1#2
+        if self.train_task in ['translate','cls']:
+            self.args.meta_epochs = 6###6
+        elif self.train_task in ['summarize','cross']:
+            self.args.meta_epochs = 2###2
         self.train_task_type = 'cls' if self.train_task in ['cls'] else 'gen'
         self.test_task_type = 'cls' if self.test_task in ['cls'] else 'gen'
         self.shared_state_dict_list = []#knowledge_trans,knowledge_trans_enc,knowledge_trans_dec
@@ -340,7 +341,7 @@ class Learner():
             elif self.train_task=='summarize':
                 lang=['java','php','ruby','python','javascript','go']
                 for i in lang:
-                    meta_train_task_list.append(('summarize',lang))
+                    meta_train_task_list.append(('summarize',i))
             elif self.train_task=='translate':
                 meta_train_task_list.append(('translate','java2cs'))
                 meta_train_task_list.append(('translate','cs2java'))
@@ -350,7 +351,7 @@ class Learner():
             elif self.test_task=='summarize':
                 lang=['java','php','ruby','python','javascript','go']
                 for i in lang:
-                    meta_test_task_list.append(('summarize',lang))
+                    meta_test_task_list.append(('summarize',i))
             elif self.test_task=='translate':
                 meta_test_task_list.append(('translate','java-cs'))
                 meta_test_task_list.append(('translate','cs-java'))
@@ -404,13 +405,18 @@ class Learner():
         return "{}M".format(round(model_size / 1e+6,3))
     def learn(self,task_type='source_task'):
         args=self.args
-        cur_epoch=self.args.cur_epoch
         t0 = time.time()
         if args.task in ['summarize', 'translate', 'refine', 'generate','complete']:
             config, model, tokenizer = bulid_or_load_gen_model(args,shared_state_dict_list=self.get_shared())
         elif args.task in ['defect','clone']:
             config, model, tokenizer = bulid_or_load_cls_model(args,shared_state_dict_list=self.get_shared())
         if task_type=='target_task':
+            if args.task in ['summarize', 'translate', 'refine', 'generate','complete']:
+                criteria='best-bleu'
+            elif args.task in ['defect']:
+                criteria='best-acc'
+            elif args.task in ['clone']:
+                criteria='best-f1'
             file = os.path.join(
                 args.origin_model_dir,args.task,args.sub_task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
             logger.info("Reload model from {}".format(file))
@@ -466,23 +472,30 @@ class Learner():
 
             # Start training
             train_example_num = len(train_data)
-            logger.info("***** Running training *****")
+            if task_type=='source_task':
+                logger.info("***** Meta training source task*****")
+            elif task_type=='target_task':
+                logger.info("***** Testing target task*****")
             logger.info("  Num examples = %d", train_example_num)
             logger.info("  Batch size = %d", args.batch_size)
             logger.info("  Batch num = %d", math.ceil(
                 train_example_num / args.batch_size))
             if task_type=='source_task':
-                epoch_=1
+                epochs=1
             elif task_type=='target_task':
-                epoch_=args.num_train_epochs
-            logger.info("  Num epoch = %d", epoch_)
+                epochs=args.num_train_epochs
+            logger.info("  Num epoch = %d", epochs)
 
             if args.task in ['summarize', 'translate', 'refine', 'generate','complete']:
                 dev_dataset = {}
                 global_step, best_bleu_em, best_ppl = 0, -1, 1e6
                 not_loss_dec_cnt, not_bleu_em_inc_cnt = 0, 0 if args.do_eval_bleu else 1e6
 
-                for _ in range(epoch_):
+                for epoch_ in range(epochs):
+                    if task_type == 'source_task':
+                        cur_epoch=self.args.cur_epoch
+                    elif task_type == 'target_task':
+                        cur_epoch=epoch_
                     bar = tqdm(train_dataloader, total=len(
                         train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
@@ -670,7 +683,11 @@ class Learner():
                 global_step, best_acc = 0, 0
                 not_acc_inc_cnt = 0
                 is_early_stop = False
-                for _ in range(epoch_):
+                for epoch_ in range(epochs):
+                    if task_type == 'source_task':
+                        cur_epoch=self.args.cur_epoch
+                    elif task_type == 'target_task':
+                        cur_epoch=epoch_
                     bar = tqdm(train_dataloader, total=len(train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
                     model.train()
@@ -785,7 +802,11 @@ class Learner():
                 global_step, best_f1 = 0, 0
                 not_f1_inc_cnt = 0
                 is_early_stop = False
-                for _ in range(epoch_):
+                for epoch_ in range(epochs):
+                    if task_type == 'source_task':
+                        cur_epoch=self.args.cur_epoch
+                    elif task_type == 'target_task':
+                        cur_epoch=epoch_
                     bar = tqdm(train_dataloader, total=len(train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
                     model.train()
@@ -1005,9 +1026,9 @@ class Learner():
     
 
     def train(self):
-        args.do_train=True
-        args.do_eval=False
-        args.do_test=False
+        self.args.do_train=True
+        self.args.do_eval=False
+        self.args.do_test=False
         self.learn(task_type='source_task')
         self.save_shared()
         logger.info("Finish saving [%s] shared parameters", self.get_shared_size(
@@ -1015,10 +1036,11 @@ class Learner():
         
 
     def test(self):
-        args.do_train=True
-        args.do_eval=False
-        args.do_test=True
-        self.load_shared()
+        self.args.do_train=True
+        self.args.do_eval=True
+        self.args.do_test=True
+        if self.args.prefix_type=="tuned":
+            self.load_shared()
         logger.info("Finish loading [%s] shared parameters", self.get_shared_size(
         self.shared_state_dict_list))
         self.learn(task_type='target_task')
@@ -1028,7 +1050,7 @@ class Learner():
     def meta_train(self):
         logger.info("Start Meta Train:")
         logger.info("Backbone model: "+str(self.args.model_name))
-        self.args.few_shot = 128#10000
+        self.args.few_shot = 10000###128
         for cur_epoch in range(self.args.start_epoch, int(self.args.meta_epochs)):
             self.args.cur_epoch = cur_epoch
             meta_train_task_list,_ = self.get_meta_task_list()
@@ -1040,20 +1062,25 @@ class Learner():
                 logger.info("args.task: "+str(self.args.task))
                 logger.info("args.sub_task: "+str(self.args.sub_task))
                 self.train()
+        print("############Successfully finished training source task################")
 
     def meta_test(self):
         logger.info("Start Meta Test:")
-        logger.info("Backbone model: "+str(args.model_name))
+        logger.info("Backbone model: "+str(self.args.model_name))
 
         _,meta_test_task_list = self.get_meta_task_list()
         for cur_task in meta_test_task_list:
             self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
+            if self.args.test_sample_rate==1:
+                self.args.few_shot=-1
+            else:
+                self.args.few_shot = int(self.args.test_sample_rate * get_sample_size(self.args,type='train'))
             set_hyperparas(self.args)
-            self.args.few_shot = int(self.args.test_sample_rate * get_sample_size(self.args,type='test'))
             logger.info("Meta Test:")
             logger.info("args.task: "+str(self.args.task))
             logger.info("args.sub_task: "+str(self.args.sub_task))
             self.test()
+        print("############Successfully finished testing target task################")
         
 
 
@@ -1075,11 +1102,14 @@ if __name__ == "__main__":
     # logger.info("args.sub_task: "+str(args.sub_task))
     # logger.info("*********************************")
     args.model='codet5'
-    args.prefix_tuning='prefix_tuning'
+    if args.prefix_type=='tuned' or args.prefix_type=='random':
+        args.prefix_tuning='prefix_tuning'
+    elif args.prefix_type=='False':
+        args.prefix_tuning='False'
     args.fix_model_param = 0
     # args.meta_epochs = 10
     learner = Learner(args)
-    if args.do_meta_train:
+    if args.do_meta_train:###if 0 and args.do_meta_train:
         learner.meta_train()
     if args.do_meta_test:
         learner.meta_test()

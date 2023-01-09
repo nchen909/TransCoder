@@ -5,6 +5,10 @@ https://blog.csdn.net/weixin_42392454/article/details/109891791
 https://blog.csdn.net/qq_36317312/article/details/121503795
 
 
+要跑的 (c32+6=12)(crosstask+crosslang) * 2(codet5&plbart) * 3(prefix_type= tuned random false只在codet5做？)*
+
+\>4(1% 5% 10% 100%)
+
 ## Environment & Preparing
 
 ```shell
