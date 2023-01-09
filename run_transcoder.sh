@@ -1,9 +1,9 @@
-WORKDIR="/data/pretrain-attention/TransCoder"
-#WORKDIR="/wjn/projects/pe_code/TransCoder"
-HUGGINGFACE_LOCALS="/data/huggingface_models/"
-#HUGGINGFACE_LOCALS="/wjn/pre-trained-lm/"
-ORIGIN_MODEL_DIR="/data/huggingface_models/"
-#ORIGIN_MODEL_DIR="/wjn/projects/code/CodePrompt/save_models"
+#WORKDIR="/data/pretrain-attention/TransCoder"
+WORKDIR="/wjn/projects/pe_code/TransCoder"
+#HUGGINGFACE_LOCALS="/data/huggingface_models/"
+HUGGINGFACE_LOCALS="/wjn/pre-trained-lm/"
+#ORIGIN_MODEL_DIR="/data/huggingface_models/"
+ORIGIN_MODEL_DIR="/wjn/projects/code/CodePrompt/save_models"
 export PYTHONPATH=$WORKDIR
 
 MODEL_NAME=${1}
