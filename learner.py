@@ -38,37 +38,30 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
-def get_meta_task_list(args):
-    meta_task=args.meta_task
-    meta_train_task_list=[]
-    meta_test_task_list=[]
-    #subtask def ''
-    train_task,test_task=meta_task.split('2')
-    if train_task=='cross':
-        #cross_language
-        lang=['java','php','ruby','python','javascript','go']
-        lang.remove(test_task)
-        for i in lang:
-            meta_train_task_list.append(('summarize',i))
-        meta_test_task_list.append(('summarize',test_task))
-    else:
-        if train_task=='cls':
-            meta_train_task_list.append(('defect',''))
-            meta_train_task_list.append(('clone',''))
-        elif train_task=='summarize':
-            lang=['java','php','ruby','python','javascript','go']
-            for i in lang:
-                meta_train_task_list.append(('summarize',lang))
-        elif train_task=='translate':
-            meta_train_task_list.append(('translate','java2cs'))
-            meta_train_task_list.append(('translate','cs2java'))
-        if test_task=='cls':
-            meta_test_task_list.append(('defect',''))
-        elif test_task=='summarize':
-            meta_test_task_list.append(('summarize','ruby'))
-        elif test_task=='translate':
-            meta_test_task_list.append(('translate','java-cs'))
-    return meta_train_task_list,meta_test_task_list
+
+def get_sample_size(args,type='test'):
+    if args.task=='summarize':
+        if args.subtask=='python':
+            data_size=[251830,13914,14918]
+        elif args.subtask=='java':
+            data_size=[164923,5183,10955]
+        elif args.subtask=='javascript':
+            data_size=[58025,3885,3291]
+        elif args.subtask=='php':
+            data_size=[241241,12982,14014]
+        elif args.subtask=='ruby':
+            data_size=[24927,1400,1261]
+        elif args.subtask=='go':
+            data_size=[167288,7325,8122]
+    elif args.task=='defect':
+        data_size=[21800,2732,2732]
+    elif args.task=='clone':
+        data_size=[901028//10,415416//10,415416//10]
+    elif args.task=='translate':
+        data_size=[10300,500,1000]
+    data_size={"train":data_size[0],"eval":data_size[1],"test":data_size[2]}
+    return data_size[type]
+
 
 def evaluate_cls(args, model, eval_examples, eval_data, write_to_pred=False):
     eval_sampler = SequentialSampler(eval_data)
@@ -318,10 +311,72 @@ def eval_bleu_epoch(args, eval_data, eval_examples, model, tokenizer, split_tag,
 class Learner():
     def __init__(self,args):
         self.args=args
+        meta_task=self.args.meta_task
+        self.train_task,self.test_task=meta_task.split('2')
+        if self.train_task in ['cross','cls']:
+            self.args.meta_epochs = 2#6
+        elif self.train_task in ['summarize','translate']:
+            self.args.meta_epochs = 1#2
+        self.train_task_type = 'cls' if self.train_task in ['cls'] else 'gen'
+        self.test_task_type = 'cls' if self.test_task in ['cls'] else 'gen'
         self.shared_state_dict_list = []#knowledge_trans,knowledge_trans_enc,knowledge_trans_dec
         #nn.Parameter(torch.Tensor(self.args.batch_size,32),requires_grad=True)
         # nn.init.kaiming_normal_(self.shared_state_dict_list, mode='fan_out', nonlinearity='relu')
 
+    def get_meta_task_list(self):
+        meta_train_task_list=[]
+        meta_test_task_list=[]
+        if self.train_task=='cross':
+            #cross_language
+            lang=['java','php','ruby','python','javascript','go']
+            lang.remove(self.test_task)
+            for i in lang:
+                meta_train_task_list.append(('summarize',i))
+            meta_test_task_list.append(('summarize',self.test_task))
+        else:
+            if self.train_task=='cls':
+                meta_train_task_list.append(('defect',''))
+                meta_train_task_list.append(('clone',''))
+            elif self.train_task=='summarize':
+                lang=['java','php','ruby','python','javascript','go']
+                for i in lang:
+                    meta_train_task_list.append(('summarize',lang))
+            elif self.train_task=='translate':
+                meta_train_task_list.append(('translate','java2cs'))
+                meta_train_task_list.append(('translate','cs2java'))
+            if self.test_task=='cls':
+                meta_test_task_list.append(('defect',''))
+                meta_test_task_list.append(('clone',''))
+            elif self.test_task=='summarize':
+                lang=['java','php','ruby','python','javascript','go']
+                for i in lang:
+                    meta_test_task_list.append(('summarize',lang))
+            elif self.test_task=='translate':
+                meta_test_task_list.append(('translate','java-cs'))
+                meta_test_task_list.append(('translate','cs-java'))
+        return meta_train_task_list,meta_test_task_list
+
+    def prepare_pretrained_state_dict(self,pretrained_state_dict):
+        new_state_dict={}
+        if self.train_task_type == 'cls' and self.test_task_type == 'gen':
+            for key,value in pretrained_state_dict.items():
+                # print("load key:",key)
+                if key[:len('encoder.pretrain_model')] == 'encoder.pretrain_model':
+                    new_state_dict['encoder'+key[len('encoder.pretrain_model'):]]=value
+                elif key[:len("classifier")] == "classifier":# classifier.weight & classifier.bias
+                    # print("load classifier key:",key)
+                    pass
+        elif self.train_task_type == 'gen' and self.test_task_type == 'cls':
+            for key,value in pretrained_state_dict.items():
+                # print("load key:",key)
+                if key[:len('encoder')] == 'encoder':
+                    new_state_dict['encoder.pretrain_model'+key[len('encoder'):]]=value
+                elif key[:len('classifier')] == "classifier":# classifier.weight & classifier.bias
+                    # print("load classifier key:",key)
+                    pass
+        else:
+            new_state_dict=pretrained_state_dict
+        return new_state_dict
     def get_shared(self):
         return self.shared_state_dict_list
     def set_shared(self,shared_state_dict_list):
@@ -347,7 +402,7 @@ class Learner():
             model_parameters = state_dict.values()
             model_size += sum([np.prod(p.size()) for p in model_parameters])
         return "{}M".format(round(model_size / 1e+6,3))
-    def learn(self):
+    def learn(self,task_type='source_task'):
         args=self.args
         cur_epoch=self.args.cur_epoch
         t0 = time.time()
@@ -355,6 +410,13 @@ class Learner():
             config, model, tokenizer = bulid_or_load_gen_model(args,shared_state_dict_list=self.get_shared())
         elif args.task in ['defect','clone']:
             config, model, tokenizer = bulid_or_load_cls_model(args,shared_state_dict_list=self.get_shared())
+        if task_type=='target_task':
+            file = os.path.join(
+                args.origin_model_dir,args.task,args.sub_task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+            logger.info("Reload model from {}".format(file))
+            
+            model = model.module if hasattr(model, 'module') else model
+            model.load_state_dict(self.prepare_pretrained_state_dict(torch.load(file)),strict=False)
         model.to(args.device)
         if args.n_gpu > 1:
             model = torch.nn.DataParallel(model)
@@ -409,14 +471,18 @@ class Learner():
             logger.info("  Batch size = %d", args.batch_size)
             logger.info("  Batch num = %d", math.ceil(
                 train_example_num / args.batch_size))
-            logger.info("  Num epoch = %d", args.num_train_epochs)
+            if task_type=='source_task':
+                epoch_=1
+            elif task_type=='target_task':
+                epoch_=args.num_train_epochs
+            logger.info("  Num epoch = %d", epoch_)
 
             if args.task in ['summarize', 'translate', 'refine', 'generate','complete']:
                 dev_dataset = {}
                 global_step, best_bleu_em, best_ppl = 0, -1, 1e6
                 not_loss_dec_cnt, not_bleu_em_inc_cnt = 0, 0 if args.do_eval_bleu else 1e6
 
-                for _ in [args.start_epoch]:
+                for _ in range(epoch_):
                     bar = tqdm(train_dataloader, total=len(
                         train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
@@ -604,7 +670,7 @@ class Learner():
                 global_step, best_acc = 0, 0
                 not_acc_inc_cnt = 0
                 is_early_stop = False
-                for _ in [args.start_epoch]:
+                for _ in range(epoch_):
                     bar = tqdm(train_dataloader, total=len(train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
                     model.train()
@@ -658,8 +724,8 @@ class Learner():
                                 tb_writer.add_scalar('train_loss_per_epoch', round(train_loss, 3), cur_epoch)
                                 tb_writer.add_scalar('train_loss_per_step', round(train_loss, 3), global_step)
                         
-                        self.set_shared([model.knowledge_trans.state_dict(),
-                        model.knowledge_trans_enc.state_dict(),model.knowledge_trans_enc.state_dict()])
+                        self.set_shared([model.encoder.knowledge_trans.state_dict(),
+                        model.encoder.knowledge_trans_enc.state_dict(),model.encoder.knowledge_trans_enc.state_dict()])
 
                         if (step + 1) % save_steps == 0 and args.do_eval:
                             logger.info("***** CUDA.empty_cache() *****")
@@ -719,7 +785,7 @@ class Learner():
                 global_step, best_f1 = 0, 0
                 not_f1_inc_cnt = 0
                 is_early_stop = False
-                for _ in [args.start_epoch]:
+                for _ in range(epoch_):
                     bar = tqdm(train_dataloader, total=len(train_dataloader), desc="Training")
                     nb_tr_examples, nb_tr_steps, tr_loss = 0, 0, 0
                     model.train()
@@ -772,8 +838,8 @@ class Learner():
                                 tb_writer.add_scalar('train_loss_per_epoch', round(train_loss, 3), cur_epoch)
                                 tb_writer.add_scalar('train_loss_per_step', round(train_loss, 3), global_step)
                         
-                        self.set_shared([model.knowledge_trans.state_dict(),
-                        model.knowledge_trans_enc.state_dict(),model.knowledge_trans_enc.state_dict()])
+                        self.set_shared([model.encoder.knowledge_trans.state_dict(),
+                        model.encoder.knowledge_trans_enc.state_dict(),model.encoder.knowledge_trans_enc.state_dict()])
 
                         if (step + 1) % save_steps == 0 and args.do_eval:
                             logger.info("***** CUDA.empty_cache() *****")
@@ -842,12 +908,13 @@ class Learner():
             logger.info("  Batch size = %d", args.test_batch_size)
             if args.task in ['summarize', 'translate', 'refine', 'generate','complete']:
                 for criteria in ['best-bleu', 'best-ppl']:  # 'best-bleu', 'best-ppl', 'last'
-                    file = os.path.join(
-                        args.origin_model_dir,args.task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                    # file = os.path.join(
+                    #     args.origin_model_dir,args.task,args.sub_task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                    file = os.path.join(args.output_dir, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
                     logger.info("Reload model from {}".format(file))
                     
                     model = model.module if hasattr(model, 'module') else model
-                    model.load_state_dict(torch.load(file))
+                    # model.load_state_dict(self.prepare_pretrained_state_dict(torch.load(file)),strict=False)
                     # if args.n_gpu > 1:
                     #     # multi-gpu training
                     #     model = torch.nn.DataParallel(model)
@@ -871,12 +938,13 @@ class Learner():
                             f.write(result_str)
             elif args.task in ['defect']:
                 for criteria in ['best-acc']:
-                    file = os.path.join(
-                        args.origin_model_dir,args.task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                    # file = os.path.join(
+                    #     args.origin_model_dir,args.task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                    file = os.path.join(args.output_dir, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
                     logger.info("Reload model from {}".format(file))
 
                     model = model.module if hasattr(model, 'module') else model
-                    model.load_state_dict(torch.load(file))
+                    # model.load_state_dict(self.prepare_pretrained_state_dict(torch.load(file)),strict=False)
                     # if args.n_gpu > 1:
                     #     # multi-gpu training
                     #     model = torch.nn.DataParallel(model)
@@ -897,12 +965,14 @@ class Learner():
                                 criteria, result['eval_acc']))
             elif args.task in ['clone']:
                 for criteria in ['best-f1']:
-                    file = os.path.join(
-                        args.origin_model_dir,args.task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                    # file = os.path.join(
+                    #     args.origin_model_dir,args.task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+                    file = os.path.join(args.output_dir, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
                     logger.info("Reload model from {}".format(file))
                     
                     model = model.module if hasattr(model, 'module') else model
-                    model.load_state_dict(torch.load(file))
+                    
+                    # model.load_state_dict(self.prepare_pretrained_state_dict(torch.load(file)),strict=False)
                     # if args.n_gpu > 1:
                     #     # multi-gpu training
                     #     model = torch.nn.DataParallel(model)
@@ -932,57 +1002,58 @@ class Learner():
         logger.info("Finish and take {}".format(get_elapse_time(t0)))
         fa.write("Finish and take {}".format(get_elapse_time(t0)))
         fa.close()
+    
 
     def train(self):
         args.do_train=True
         args.do_eval=False
         args.do_test=False
-        self.learn()
+        self.learn(task_type='source_task')
         self.save_shared()
         logger.info("Finish saving [%s] shared parameters", self.get_shared_size(
                 self.shared_state_dict_list))
         
 
     def test(self):
-        args.do_train=False
+        args.do_train=True
         args.do_eval=False
         args.do_test=True
         self.load_shared()
         logger.info("Finish loading [%s] shared parameters", self.get_shared_size(
         self.shared_state_dict_list))
-        self.learn()
+        self.learn(task_type='target_task')
 
     def few_shot_train(self, model, epoch):
         pass
     def meta_train(self):
         logger.info("Start Meta Train:")
-        logger.info("Backbone model: "+str(args.model_name))
+        logger.info("Backbone model: "+str(self.args.model_name))
+        self.args.few_shot = 128#10000
         for cur_epoch in range(self.args.start_epoch, int(self.args.meta_epochs)):
             self.args.cur_epoch = cur_epoch
-            meta_train_task_list,_ = get_meta_task_list(self.args)
+            meta_train_task_list,_ = self.get_meta_task_list()
             for cur_task in meta_train_task_list:
                 self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
                 set_hyperparas(self.args)
                 logger.info("Meta Train:")
-                logger.info("Sample size: "+str(args.few_shot))
-                logger.info("args.task: "+str(args.task))
-                logger.info("args.sub_task: "+str(args.sub_task))
+                logger.info("Sample size: "+str(self.args.few_shot))
+                logger.info("args.task: "+str(self.args.task))
+                logger.info("args.sub_task: "+str(self.args.sub_task))
                 self.train()
 
     def meta_test(self):
-        logger.info("Start Meta Train:")
+        logger.info("Start Meta Test:")
         logger.info("Backbone model: "+str(args.model_name))
-        args.few_shot = -1
-        for cur_epoch in range(self.args.start_epoch, int(self.args.meta_epochs)):
-            self.args.cur_epoch = cur_epoch
-            _,meta_test_task_list = get_meta_task_list(self.args)
-            for cur_task in meta_test_task_list:
-                self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
-                set_hyperparas(self.args)
-                logger.info("Meta Test:")
-                logger.info("args.task: "+str(args.task))
-                logger.info("args.sub_task: "+str(args.sub_task))
-                self.test()
+
+        _,meta_test_task_list = self.get_meta_task_list()
+        for cur_task in meta_test_task_list:
+            self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
+            set_hyperparas(self.args)
+            self.args.few_shot = int(self.args.test_sample_rate * get_sample_size(self.args,type='test'))
+            logger.info("Meta Test:")
+            logger.info("args.task: "+str(self.args.task))
+            logger.info("args.sub_task: "+str(self.args.sub_task))
+            self.test()
         
 
 
@@ -1005,9 +1076,10 @@ if __name__ == "__main__":
     # logger.info("*********************************")
     args.model='codet5'
     args.prefix_tuning='prefix_tuning'
-    args.few_shot = 10000
     args.fix_model_param = 0
-    args.meta_epochs = 5
+    # args.meta_epochs = 10
     learner = Learner(args)
-    learner.meta_train()
-    learner.meta_test()
+    if args.do_meta_train:
+        learner.meta_train()
+    if args.do_meta_test:
+        learner.meta_test()

@@ -90,9 +90,12 @@ class CloneModel(nn.Module):
             # self.pre_seq_len = self.args.max_source_length # 5
             # self.code_prefix_matrix = torch.ones(len(self.code_prefix_tokens), len(self.code_prefix_tokens)).long().cuda()
 
-            self.code_prefix_tokens, self.code_prefix_matrix = get_graph_metadata(self.args,self.tokenizer)
-            self.code_prefix_tokens = torch.tensor(self.code_prefix_tokens, dtype=torch.long).cuda()
-            self.code_prefix_matrix = torch.tensor(self.code_prefix_matrix, dtype=torch.long).cuda()
+            # self.code_prefix_tokens, self.code_prefix_matrix = get_graph_metadata(self.args,self.tokenizer)
+            # self.code_prefix_tokens = torch.tensor(self.code_prefix_tokens, dtype=torch.long).cuda()
+            # self.code_prefix_matrix = torch.tensor(self.code_prefix_matrix, dtype=torch.long).cuda()
+            self.code_prefix_tokens = torch.arange(self.args.gat_token_num).long().to(args.device)
+            self.code_prefix_matrix = torch.arange(self.args.gat_token_num).long().to(args.device)
+
             self.pre_seq_len = self.args.max_source_length
 
             self.n_layer = config.num_hidden_layers
@@ -305,9 +308,11 @@ class DefectModel(nn.Module):
             if self.args.fix_model_param:
                 for param in self.encoder.parameters():
                     param.requires_grad = False
-            self.code_prefix_tokens, self.code_prefix_matrix = get_graph_metadata(self.args,self.tokenizer)
-            self.code_prefix_tokens = torch.tensor(self.code_prefix_tokens, dtype=torch.long).cuda()
-            self.code_prefix_matrix = torch.tensor(self.code_prefix_matrix, dtype=torch.long).cuda()
+            # self.code_prefix_tokens, self.code_prefix_matrix = get_graph_metadata(self.args,self.tokenizer)
+            # self.code_prefix_tokens = torch.tensor(self.code_prefix_tokens, dtype=torch.long).cuda()
+            # self.code_prefix_matrix = torch.tensor(self.code_prefix_matrix, dtype=torch.long).cuda()
+            self.code_prefix_tokens = torch.arange(self.args.gat_token_num).long().to(args.device)
+            self.code_prefix_matrix = torch.arange(self.args.gat_token_num).long().to(args.device)
             self.pre_seq_len = self.args.max_source_length
 
             self.n_layer = config.num_hidden_layers

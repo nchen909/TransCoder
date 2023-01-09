@@ -167,7 +167,7 @@ def bulid_or_load_gen_model(args,shared_state_dict_list):
         else:# a wrapper model class
             args.pretrained_model_name_or_path= checkpoint
             model = model_class(args=args,shared_state_dict_list=shared_state_dict_list)
-    if args.prefix_tuning:
+    if args.prefix_tuning!="prefix_tuning":
         if hasattr(model,'code_prefix'):
             logger.info("Finish loading model [%s] parameters from %s", get_model_size(
                 model.code_prefix.gat_layer), args.model_name)
@@ -224,7 +224,7 @@ def bulid_or_load_cls_model(args,shared_state_dict_list):
         # model.resize_token_embeddings(32000)
         model = CloneModel(model, config, tokenizer, args)
 
-    if args.prefix_tuning:
+    if args.prefix_tuning!="prefix_tuning":
         if hasattr(model,'code_prefix'):
             logger.info("Finish loading model [%s] parameters from %s", get_model_size(
                 model.code_prefix.gat_layer), args.model_name)
