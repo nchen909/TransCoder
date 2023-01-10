@@ -315,9 +315,9 @@ class Learner():
         meta_task=self.args.meta_task
         self.train_task,self.test_task=meta_task.split('2')
         if self.train_task in ['translate','cls']:
-            self.args.meta_epochs = 1###6
+            self.args.meta_epochs = 6###1
         elif self.train_task in ['summarize','cross']:
-            self.args.meta_epochs = 2###2
+            self.args.meta_epochs = 2###1
         self.train_task_type = 'cls' if self.train_task in ['cls'] else 'gen'
         self.test_task_type = 'cls' if self.test_task in ['cls'] else 'gen'
         self.shared_state_dict_list = []#knowledge_trans,knowledge_trans_enc,knowledge_trans_dec
@@ -778,7 +778,7 @@ class Learner():
                                 logger.info("  " + "*" * 20)
                                 fa.write("[%d] Best acc changed into %.4f\n" % (cur_epoch, round(eval_acc, 4)))
                                 best_acc = eval_acc
-                                # Save best checkpoint for best ppl
+                                # Save best checkpoint for best acc
                                 output_dir = os.path.join(args.output_dir, 'checkpoint-best-acc')
                                 if not os.path.exists(output_dir):
                                     os.makedirs(output_dir)
@@ -786,7 +786,7 @@ class Learner():
                                     model_to_save = model.module if hasattr(model, 'module') else model
                                     output_model_file = os.path.join(output_dir, "pytorch_model.bin")
                                     torch.save(model_to_save.state_dict(), output_model_file)
-                                    logger.info("Save the best ppl model into %s", output_model_file)
+                                    logger.info("Save the best acc model into %s", output_model_file)
                             else:
                                 not_acc_inc_cnt += 1
                                 logger.info("acc does not increase for %d epochs", not_acc_inc_cnt)
@@ -896,7 +896,7 @@ class Learner():
                                 logger.info("  " + "*" * 20)
                                 fa.write("[%d] Best f1 changed into %.4f\n" % (cur_epoch, round(eval_f1, 4)))
                                 best_f1 = eval_f1
-                                # Save best checkpoint for best ppl
+                                # Save best checkpoint for best f1
                                 output_dir = os.path.join(args.output_dir, 'checkpoint-best-f1')
                                 if not os.path.exists(output_dir):
                                     os.makedirs(output_dir)
@@ -904,7 +904,7 @@ class Learner():
                                     model_to_save = model.module if hasattr(model, 'module') else model
                                     output_model_file = os.path.join(output_dir, "pytorch_model.bin")
                                     torch.save(model_to_save.state_dict(), output_model_file)
-                                    logger.info("Save the best ppl model into %s", output_model_file)
+                                    logger.info("Save the best f1 model into %s", output_model_file)
                             else:
                                 not_f1_inc_cnt += 1
                                 logger.info("F1 does not increase for %d epochs", not_f1_inc_cnt)
@@ -1055,7 +1055,7 @@ class Learner():
     def meta_train(self):
         logger.info("Start Meta Train:")
         logger.info("Backbone model: "+str(self.args.model_name))
-        self.args.few_shot = 128###10000
+        self.args.few_shot = 10000###128
         for cur_epoch in range(self.args.start_epoch, int(self.args.meta_epochs)):
             self.args.cur_epoch = cur_epoch
             meta_train_task_list,_ = self.get_meta_task_list()
@@ -1081,7 +1081,7 @@ class Learner():
                 logger.info("args.task: "+str(self.args.task))
                 logger.info("args.sub_task: "+str(self.args.sub_task))
                 self.train()
-                logger.info("Successfully done training"+self.args.meta_task+"on"+self.args.task+" "+self.args.sub_task)
+                logger.info("Successfully done training "+self.args.meta_task+"on"+self.args.task+" "+self.args.sub_task)
         print("############Successfully finished training "+self.args.meta_task+" source task################")
 
     def meta_test(self):
@@ -1117,7 +1117,7 @@ class Learner():
             logger.info("args.task: "+str(self.args.task))
             logger.info("args.sub_task: "+str(self.args.sub_task))
             self.test()
-            logger.info("Successfully done testing"+self.args.meta_task+"on"+self.args.task+" "+self.args.sub_task)
+            logger.info("Successfully done testing "+self.args.meta_task+"on"+self.args.task+" "+self.args.sub_task)
         print("############Successfully finished testing "+self.args.meta_task+" target task################")
         
 

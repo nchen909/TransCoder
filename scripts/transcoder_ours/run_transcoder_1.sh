@@ -8,7 +8,7 @@ for model in "${model_lst[@]}"; do
 
     #crosstask
     CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model summarize2translate
-    CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model cls2translate
+    # CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model cls2translate
     # CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model translate2cls
     # CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model summarize2cls
     # CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model translate2summarize
