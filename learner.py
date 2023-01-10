@@ -385,7 +385,8 @@ class Learner():
 
     def load_shared(self):
         import os
-        for i in range(len(os.listdir(self.args.shared_dir))):
+        dirpath='{}/{}/{}/{}'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata')
+        for i in range(len(os.listdir(dirpath))):
             path='{}/{}/{}/{}/shared{}.pth'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata',i)
             self.shared_state_dict_list.append(torch.load(path))
             logger.info("Load shared state dict from:"+path)
