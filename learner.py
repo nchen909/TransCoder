@@ -315,7 +315,7 @@ class Learner():
         meta_task=self.args.meta_task
         self.train_task,self.test_task=meta_task.split('2')
         if self.train_task in ['translate','cls']:
-            self.args.meta_epochs = 6###6
+            self.args.meta_epochs = 1###6
         elif self.train_task in ['summarize','cross']:
             self.args.meta_epochs = 2###2
         self.train_task_type = 'cls' if self.train_task in ['cls'] else 'gen'
@@ -386,16 +386,19 @@ class Learner():
     def load_shared(self):
         import os
         for i in range(len(os.listdir(self.args.shared_dir))):
-            path='{}/shared{}.pth'.format(self.args.shared_dir,i)
+            path='{}/{}/{}/{}/shared{}.pth'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata',i)
             self.shared_state_dict_list.append(torch.load(path))
-            print("Load shared state dict from:",path)
+            logger.info("Load shared state dict from:"+path)
     def save_shared(self):
         i=0
         for shared_state_dict in self.shared_state_dict_list:
-            path='{}/shared{}.pth'.format(self.args.shared_dir,i)
+            dirpath='{}/{}/{}/{}'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata')
+            path='{}/{}/{}/{}/shared{}.pth'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata',i)
+            if not os.path.exists(dirpath):
+                os.makedirs(dirpath)
             torch.save(shared_state_dict, path)
             i+=1
-            print("Save shared state dict to:",path)
+            logger.info("Save shared state dict to:"+path)
         
     def get_shared_size(self,shared_state_dict_list):
         model_size = 0
@@ -1038,6 +1041,7 @@ class Learner():
     def test(self):
         self.args.do_train=True
         self.args.do_eval=True
+        self.args.do_eval_bleu=True
         self.args.do_test=True
         if self.args.prefix_type=="tuned":
             self.load_shared()
@@ -1050,19 +1054,25 @@ class Learner():
     def meta_train(self):
         logger.info("Start Meta Train:")
         logger.info("Backbone model: "+str(self.args.model_name))
-        self.args.few_shot = 10000###128
+        self.args.few_shot = 128###10000
         for cur_epoch in range(self.args.start_epoch, int(self.args.meta_epochs)):
             self.args.cur_epoch = cur_epoch
             meta_train_task_list,_ = self.get_meta_task_list()
             for cur_task in meta_train_task_list:
                 self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
                 set_hyperparas(self.args)
+                dirpath='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,"source_task",self.args.model_name)
+                if not os.path.exists(dirpath):
+                    os.makedirs(dirpath)
+                self.args.output_dir=dirpath
                 logger.info("Meta Train:")
+                logger.info("Meta task:"+str(self.args.meta_task))
                 logger.info("Sample size: "+str(self.args.few_shot))
                 logger.info("args.task: "+str(self.args.task))
                 logger.info("args.sub_task: "+str(self.args.sub_task))
                 self.train()
-        print("############Successfully finished training source task################")
+                logger.info("Successfully done training"+self.args.meta_task+"on"+self.args.task+" "+self.args.sub_task)
+        print("############Successfully finished training "+self.args.meta_task+" source task################")
 
     def meta_test(self):
         logger.info("Start Meta Test:")
@@ -1076,11 +1086,20 @@ class Learner():
             else:
                 self.args.few_shot = int(self.args.test_sample_rate * get_sample_size(self.args,type='train'))
             set_hyperparas(self.args)
+            if self.args.task in ['defect','clone']:
+                dirpath='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,self.args.task,self.args.model_name)
+            else:
+                dirpath='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,self.args.sub_task,self.args.model_name)
+            if not os.path.exists(dirpath):
+                os.makedirs(dirpath)
+            self.args.output_dir=dirpath
             logger.info("Meta Test:")
+            logger.info("Meta task:"+str(self.args.meta_task))
             logger.info("args.task: "+str(self.args.task))
             logger.info("args.sub_task: "+str(self.args.sub_task))
             self.test()
-        print("############Successfully finished testing target task################")
+            logger.info("Successfully done testing"+self.args.meta_task+"on"+self.args.task+" "+self.args.sub_task)
+        print("############Successfully finished testing "+self.args.meta_task+" target task################")
         
 
 

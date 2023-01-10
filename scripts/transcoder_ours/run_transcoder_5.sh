@@ -12,7 +12,7 @@ for model in "${model_lst[@]}"; do
     # CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model translate2cls
     # CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model summarize2cls
     # CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model translate2summarize
-    CUDA_VISIBLE_DEVICES=0 bash run_transcoder.sh $model cls2summarize
+    CUDA_VISIBLE_DEVICES=7 bash run_transcoder.sh $model cls2summarize
     
     # # crosslang
     # CUDA_VISIBLE_DEVICES=1 bash run_transcoder.sh $model cross2ruby
