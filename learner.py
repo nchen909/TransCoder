@@ -1061,10 +1061,19 @@ class Learner():
             for cur_task in meta_train_task_list:
                 self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
                 set_hyperparas(self.args)
-                dirpath='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,"source_task",self.args.model_name)
-                if not os.path.exists(dirpath):
-                    os.makedirs(dirpath)
-                self.args.output_dir=dirpath
+                outputdir='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,"source_task",self.args.model_name)
+                cache_dir='{}/{}/{}/{}/{}'.format(self.args.work_dir,'.cache',self.args.task,self.args.sub_task,self.args.model_name)
+                res_dir='{}/{}/{}/{}/{}/{}'.format(self.args.work_dir,'results',self.args.meta_task,self.args.task,self.args.sub_task,self.args.model_name)
+                if not os.path.exists(outputdir):
+                    os.makedirs(outputdir)
+                if not os.path.exists(cache_dir):
+                    os.makedirs(cache_dir)
+                if not os.path.exists(res_dir):
+                    os.makedirs(res_dir)
+                self.args.output_dir=outputdir
+                self.args.cache_dir=cache_dir
+                self.args.res_dir=res_dir
+                self.args.res_fn=res_dir+'.txt'
                 logger.info("Meta Train:")
                 logger.info("Meta task:"+str(self.args.meta_task))
                 logger.info("Sample size: "+str(self.args.few_shot))
@@ -1087,12 +1096,21 @@ class Learner():
                 self.args.few_shot = int(self.args.test_sample_rate * get_sample_size(self.args,type='train'))
             set_hyperparas(self.args)
             if self.args.task in ['defect','clone']:
-                dirpath='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,self.args.task,self.args.model_name)
+                outputdir='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,self.args.task,self.args.model_name)
             else:
-                dirpath='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,self.args.sub_task,self.args.model_name)
-            if not os.path.exists(dirpath):
-                os.makedirs(dirpath)
-            self.args.output_dir=dirpath
+                outputdir='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,self.args.sub_task,self.args.model_name)
+            cache_dir='{}/{}/{}/{}/{}'.format(self.args.work_dir,'.cache',self.args.task,self.args.sub_task,self.args.model_name)
+            res_dir='{}/{}/{}/{}/{}/{}'.format(self.args.work_dir,'results',self.args.meta_task,self.args.task,self.args.sub_task,self.args.model_name)
+            if not os.path.exists(outputdir):
+                os.makedirs(outputdir)
+            if not os.path.exists(cache_dir):
+                os.makedirs(cache_dir)
+            if not os.path.exists(res_dir):
+                os.makedirs(res_dir)
+            self.args.output_dir=outputdir
+            self.args.cache_dir=cache_dir
+            self.args.res_dir=res_dir
+            self.args.res_fn=res_dir+'.txt'
             logger.info("Meta Test:")
             logger.info("Meta task:"+str(self.args.meta_task))
             logger.info("args.task: "+str(self.args.task))

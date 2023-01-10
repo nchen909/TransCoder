@@ -97,7 +97,8 @@ def add_args(parser):
     parser.add_argument("--bitfit", default=0, type=int,
                     help="parameter-efficient bitfit, 0 for not tuning, 1 for tuning")
     
-
+    parser.add_argument("--work_dir", type=str, default='TransCoder',
+                        help='work dir')
     parser.add_argument("--old_prefix_dir", default='old_data_prefix', type=str,
                         help="directory to score graphmetadata.txt")
     parser.add_argument("--prefix_dir", default='data_prefix', type=str,

@@ -40,7 +40,7 @@ if [[ ${SUB_TASK} == none ]]; then
   # CUDA_VISIBLE_DEVICES=0 \
   TOKENIZERS_PARALLELISM=false \
     python ${RUN_FN} ${MULTI_TASK_AUG} --save_last_checkpoints --always_save_model \
-    --meta_task ${META_TASK} --model_name ${MODEL_NAME} --data_num ${DATA_NUM}  --origin_model_dir ${ORIGIN_MODEL_DIR} \
+    --work_dir ${WORKDIR} --meta_task ${META_TASK} --model_name ${MODEL_NAME} --data_num ${DATA_NUM}  --origin_model_dir ${ORIGIN_MODEL_DIR} \
     --output_dir ${OUTPUT_DIR}  --summary_dir ${SUMMARY_DIR} --huggingface_locals ${HUGGINGFACE_LOCALS}\
     --data_dir ${WORKDIR}/data  --prefix_tuning 'prefix_tuning' --knowledge_usage 'separate' --old_prefix_dir ${WORKDIR}/data_prefix --cache_path ${CACHE_DIR} --res_dir ${RES_DIR} --res_fn ${RES_FN} \
     2>&1 | tee ${LOG}
@@ -48,7 +48,7 @@ else
   # CUDA_VISIBLE_DEVICES=0 \
   TOKENIZERS_PARALLELISM=false \
     python ${RUN_FN} ${MULTI_TASK_AUG} --save_last_checkpoints --always_save_model \
-    --meta_task ${META_TASK} --model_name ${MODEL_NAME} --data_num ${DATA_NUM}  --origin_model_dir ${ORIGIN_MODEL_DIR} \
+    --work_dir ${WORKDIR} --meta_task ${META_TASK} --model_name ${MODEL_NAME} --data_num ${DATA_NUM}  --origin_model_dir ${ORIGIN_MODEL_DIR} \
     --output_dir ${OUTPUT_DIR}  --summary_dir ${SUMMARY_DIR} --huggingface_locals ${HUGGINGFACE_LOCALS}\
     --data_dir ${WORKDIR}/data  --prefix_tuning 'prefix_tuning' --knowledge_usage 'separate' --old_prefix_dir ${WORKDIR}/data_prefix --cache_path ${CACHE_DIR} --res_dir ${RES_DIR} --res_fn ${RES_FN} \
     2>&1 | tee ${LOG}
