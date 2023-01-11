@@ -312,12 +312,14 @@ def eval_bleu_epoch(args, eval_data, eval_examples, model, tokenizer, split_tag,
 class Learner():
     def __init__(self,args):
         self.args=args
+        self.args.origin_output_dir=self.args.output_dir
+        self.args.origin_work_dir=self.args.work_dir
         meta_task=self.args.meta_task
         self.train_task,self.test_task=meta_task.split('2')
         if self.train_task in ['translate','cls']:
-            self.args.meta_epochs = 6###1
+            self.args.meta_epochs = 6 if not args.debug else 1###1
         elif self.train_task in ['summarize','cross']:
-            self.args.meta_epochs = 2###1
+            self.args.meta_epochs = 2 if not args.debug else 1###1
         self.train_task_type = 'cls' if self.train_task in ['cls'] else 'gen'
         self.test_task_type = 'cls' if self.test_task in ['cls'] else 'gen'
         self.shared_state_dict_list = []#knowledge_trans,knowledge_trans_enc,knowledge_trans_dec
@@ -1055,16 +1057,16 @@ class Learner():
     def meta_train(self):
         logger.info("Start Meta Train:")
         logger.info("Backbone model: "+str(self.args.model_name))
-        self.args.few_shot = 10000###128
+        self.args.few_shot = 10000 if not args.debug else 128###128
         for cur_epoch in range(self.args.start_epoch, int(self.args.meta_epochs)):
             self.args.cur_epoch = cur_epoch
             meta_train_task_list,_ = self.get_meta_task_list()
             for cur_task in meta_train_task_list:
                 self.args.task, self.args.sub_task = cur_task[0],cur_task[1]
                 set_hyperparas(self.args)
-                outputdir='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,"source_task",self.args.model_name)
-                cache_dir='{}/{}/{}/{}/{}'.format(self.args.work_dir,'.cache',self.args.task,self.args.sub_task,self.args.model_name)
-                res_dir='{}/{}/{}/{}/{}/{}'.format(self.args.work_dir,'results',self.args.meta_task,self.args.task,self.args.sub_task,self.args.model_name)
+                outputdir='{}/{}/{}/{}'.format(self.args.origin_output_dir,self.args.meta_task,"source_task",self.args.model_name)
+                cache_dir='{}/{}/{}/{}/{}'.format(self.args.origin_work_dir,'.cache',self.args.task,self.args.sub_task,self.args.model_name)
+                res_dir='{}/{}/{}/{}/{}/{}'.format(self.args.origin_work_dir,'results',self.args.meta_task,self.args.task,self.args.sub_task,self.args.model_name)
                 if not os.path.exists(outputdir):
                     os.makedirs(outputdir)
                 if not os.path.exists(cache_dir):
@@ -1081,7 +1083,7 @@ class Learner():
                 logger.info("args.task: "+str(self.args.task))
                 logger.info("args.sub_task: "+str(self.args.sub_task))
                 self.train()
-                logger.info("Successfully done training "+self.args.meta_task+"on"+self.args.task+" "+self.args.sub_task)
+                logger.info("Successfully done training "+self.args.meta_task+" on "+self.args.task+" "+self.args.sub_task)
         print("############Successfully finished training "+self.args.meta_task+" source task################")
 
     def meta_test(self):
@@ -1097,11 +1099,11 @@ class Learner():
                 self.args.few_shot = int(self.args.test_sample_rate * get_sample_size(self.args,type='train'))
             set_hyperparas(self.args)
             if self.args.task in ['defect','clone']:
-                outputdir='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,self.args.task,self.args.model_name)
+                outputdir='{}/{}/{}/{}'.format(self.args.origin_output_dir,self.args.meta_task,self.args.task,self.args.model_name)
             else:
-                outputdir='{}/{}/{}/{}'.format(self.args.output_dir,self.args.meta_task,self.args.sub_task,self.args.model_name)
-            cache_dir='{}/{}/{}/{}/{}'.format(self.args.work_dir,'.cache',self.args.task,self.args.sub_task,self.args.model_name)
-            res_dir='{}/{}/{}/{}/{}/{}'.format(self.args.work_dir,'results',self.args.meta_task,self.args.task,self.args.sub_task,self.args.model_name)
+                outputdir='{}/{}/{}/{}'.format(self.args.origin_output_dir,self.args.meta_task,self.args.sub_task,self.args.model_name)
+            cache_dir='{}/{}/{}/{}/{}'.format(self.args.origin_work_dir,'.cache',self.args.task,self.args.sub_task,self.args.model_name)
+            res_dir='{}/{}/{}/{}/{}/{}'.format(self.args.origin_work_dir,'results',self.args.meta_task,self.args.task,self.args.sub_task,self.args.model_name)
             if not os.path.exists(outputdir):
                 os.makedirs(outputdir)
             if not os.path.exists(cache_dir):
@@ -1117,7 +1119,7 @@ class Learner():
             logger.info("args.task: "+str(self.args.task))
             logger.info("args.sub_task: "+str(self.args.sub_task))
             self.test()
-            logger.info("Successfully done testing "+self.args.meta_task+"on"+self.args.task+" "+self.args.sub_task)
+            logger.info("Successfully done testing "+self.args.meta_task+" on "+self.args.task+" "+self.args.sub_task)
         print("############Successfully finished testing "+self.args.meta_task+" target task################")
         
 
@@ -1146,6 +1148,9 @@ if __name__ == "__main__":
         args.prefix_tuning='False'
     args.fix_model_param = 0
     # args.meta_epochs = 10
+
+    if args.debug:
+        args.test_sample_rate=0.05
     learner = Learner(args)
     if args.do_meta_train:###if 0 and args.do_meta_train:
         learner.meta_train()

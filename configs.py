@@ -148,6 +148,8 @@ def add_args(parser):
                     help="whether do meta train")
     parser.add_argument("--do_meta_test", default=1, type=int,
                     help="whether do meta test")
+    parser.add_argument("--debug", default=0, type=int,
+                    help="for debug")
 
     args = parser.parse_args()
     return args

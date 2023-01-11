@@ -16,6 +16,7 @@ for model in "${model_lst[@]}"; do
     
     # # crosslang
     CUDA_VISIBLE_DEVICES=6 bash run_transcoder.sh $model cross2ruby
+    ##11h
     # CUDA_VISIBLE_DEVICES=1 bash run_transcoder.sh $model cross2javascript
     # CUDA_VISIBLE_DEVICES=2 bash run_transcoder.sh $model cross2java
     # CUDA_VISIBLE_DEVICES=2 bash run_transcoder.sh $model cross2go
