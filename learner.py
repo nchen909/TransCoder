@@ -423,10 +423,10 @@ class Learner():
                 criteria='best-acc'
             elif args.task in ['clone']:
                 criteria='best-f1'
-            # file = os.path.join(
-            #     args.origin_model_dir,args.task,args.sub_task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
             file = os.path.join(
-                args.origin_model_dir, 'pytorch_model.bin')
+                args.origin_model_dir,args.task,args.sub_task,args.model_name, 'checkpoint-{}/pytorch_model.bin'.format(criteria))
+            # file = os.path.join(
+            #     args.origin_model_dir, 'pytorch_model.bin')
             logger.info("Reload model from {}".format(file))
             
             model = model.module if hasattr(model, 'module') else model
