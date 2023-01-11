@@ -317,7 +317,7 @@ class Learner():
         meta_task=self.args.meta_task
         self.train_task,self.test_task=meta_task.split('2')
         if self.train_task in ['translate','cls']:
-            self.args.meta_epochs = 6 if not args.debug else 1###1
+            self.args.meta_epochs = 4 if not args.debug else 1###1
         elif self.train_task in ['summarize','cross']:
             self.args.meta_epochs = 2 if not args.debug else 1###1
         self.train_task_type = 'cls' if self.train_task in ['cls'] else 'gen'
@@ -387,16 +387,16 @@ class Learner():
 
     def load_shared(self):
         import os
-        dirpath='{}/{}/{}/{}'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata')
+        dirpath='{}/{}/{}/{}'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(int(1*100))+'percentdata')
         for i in range(len(os.listdir(dirpath))):
-            path='{}/{}/{}/{}/shared{}.pth'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata',i)
+            path='{}/{}/{}/{}/shared{}.pth'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(int(1*100))+'percentdata',i)
             self.shared_state_dict_list.append(torch.load(path))
             logger.info("Load shared state dict from:"+path)
     def save_shared(self):
         i=0
         for shared_state_dict in self.shared_state_dict_list:
-            dirpath='{}/{}/{}/{}'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata')
-            path='{}/{}/{}/{}/shared{}.pth'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(self.args.test_sample_rate*100)+'percentdata',i)
+            dirpath='{}/{}/{}/{}'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(int(self.args.test_sample_rate*100))+'percentdata')
+            path='{}/{}/{}/{}/shared{}.pth'.format(self.args.shared_dir,self.args.meta_task,self.args.model_name,str(int(self.args.test_sample_rate*100))+'percentdata',i)
             if not os.path.exists(dirpath):
                 os.makedirs(dirpath)
             torch.save(shared_state_dict, path)
