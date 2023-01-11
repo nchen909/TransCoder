@@ -11,7 +11,7 @@ for model in "${model_lst[@]}"; do
     # CUDA_VISIBLE_DEVICES=0 bash run_sample01.sh $model cls2translate
     # CUDA_VISIBLE_DEVICES=0 bash run_sample01.sh $model translate2cls
     # CUDA_VISIBLE_DEVICES=0 bash run_sample01.sh $model summarize2cls
-    CUDA_VISIBLE_DEVICES=4 bash run_sample01.sh $model translate2summarize
+    # CUDA_VISIBLE_DEVICES=4 bash run_sample01.sh $model translate2summarize
     # CUDA_VISIBLE_DEVICES=7 bash run_sample01.sh $model cls2summarize
     
     # # crosslang
@@ -19,7 +19,7 @@ for model in "${model_lst[@]}"; do
     # CUDA_VISIBLE_DEVICES=1 bash run_sample01.sh $model cross2javascript
     # CUDA_VISIBLE_DEVICES=2 bash run_sample01.sh $model cross2java
     # CUDA_VISIBLE_DEVICES=2 bash run_sample01.sh $model cross2go
-    CUDA_VISIBLE_DEVICES=4 bash run_sample01.sh $model crossphp
+    CUDA_VISIBLE_DEVICES=4 bash run_sample01.sh $model cross2php
     # CUDA_VISIBLE_DEVICES=1 bash run_sample01.sh $model cross2python
 
 done

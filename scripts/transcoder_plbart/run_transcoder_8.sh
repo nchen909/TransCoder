@@ -19,7 +19,7 @@ for model in "${model_lst[@]}"; do
     CUDA_VISIBLE_DEVICES=7 bash run_transcoder.sh $model cross2javascript
     # CUDA_VISIBLE_DEVICES=2 bash run_transcoder.sh $model cross2java
     # CUDA_VISIBLE_DEVICES=2 bash run_transcoder.sh $model cross2go
-    # CUDA_VISIBLE_DEVICES=2 bash run_transcoder.sh $model crossphp
+    # CUDA_VISIBLE_DEVICES=2 bash run_transcoder.sh $model cross2php
     # CUDA_VISIBLE_DEVICES=1 bash run_transcoder.sh $model cross2python
 
 done
