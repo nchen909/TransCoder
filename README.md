@@ -15,7 +15,6 @@ https://blog.csdn.net/qq_36317312/article/details/121503795
 conda create --name cat python=3.7
 conda activate cat
 pip install -r requirements.txt
-git clone https://github.com/nchen909/TransCoder
 cd TransCoder/evaluator/CodeBLEU/parser
 bash build.sh
 cd ../../../

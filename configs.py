@@ -192,61 +192,76 @@ def set_hyperparas(args):
     args.gradient_accumulation_steps = 1
     args.weight_decay = 0.0
     args.max_source_length = 512
+    if args.model_name in ['t5', 'codet5']:
+        lr=2e-5
+    elif args.model_name in ['bart', 'plbart','unixcoder']:
+        lr=2e-5# 5e-5
+    elif args.model_name in ['graphcodebert']:
+        lr=2e-5# 5e-5(in repo)#1e-4(in plbartpaper)
     if args.task == 'summarize':
-        args.data_num = args.few_shot if args.few_shot > 0 else -1
-        args.lr = 2e-5 if not args.prefix_tuning else 2e-5#2e-3
-        args.max_source_length = 256
-        args.max_target_length = 128
-    elif args.task == 'translate':
-        args.data_num = args.few_shot if args.few_shot > 0 else -1
-        args.lr = 2e-5 if not args.prefix_tuning else 2e-5#2e-3
-        args.max_source_length = 320
-        args.max_target_length = 256
-    elif args.task == 'refine':
-        args.data_num = args.few_shot if args.few_shot > 0 else -1
-        args.lr = 2e-5 if not args.prefix_tuning else 2e-5#2e-3
-        if args.sub_task == 'small':
-            args.max_source_length = 130
-            args.max_target_length = 120
-        else:
-            args.max_source_length = 240
-            args.max_target_length = 240
-    elif args.task == 'generate':
-        args.data_num = args.few_shot if args.few_shot > 0 else -1
-        args.lr = 2e-5 if not args.prefix_tuning else 2e-5#2e-3
-        args.max_source_length = 320
-        args.max_target_length = 150
-    elif args.task == 'complete':
-        args.data_num = args.few_shot if args.few_shot > 0 else -1
-        args.lr = 1e-5 if not args.prefix_tuning else 1e-5#1e-3
-        args.max_source_length = 256
-        args.max_target_length = 256
-    elif args.task == 'defect':
-        args.data_num = args.few_shot * 2 if args.few_shot > 0 else -1
-        args.lr = 8e-6 if not args.prefix_tuning else 8e-6#8e-4
-        args.max_source_length = 512
-        args.max_target_length = 3  # as do not need to add lang ids
-    elif args.task == 'clone':
-        args.data_num = args.few_shot * 2 if args.few_shot > 0 else -1 
-        args.lr = 2e-5 if not args.prefix_tuning else 5e-5
-        args.max_source_length = 512#512#400
-        args.max_target_length = 512#512#400
+            args.data_num = args.few_shot if args.few_shot > 0 else -1
+            args.lr = lr if not args.prefix_tuning else 1e-4#2e-3
+            args.max_source_length = 256
+            args.max_target_length = 128
+        elif args.task == 'translate':
+            args.data_num = args.few_shot if args.few_shot > 0 else -1
+            if args.model_name in ['t5', 'codet5'] and args.sub_task == 'java-cs':
+                args.lr = lr if not args.prefix_tuning else 5e-4#0224#2e-3
+            else:
+                args.lr = lr if not args.prefix_tuning else 1e-4#0224#2e-3
+            args.max_source_length = 320
+            args.max_target_length = 256
+        elif args.task == 'refine':
+            args.data_num = args.few_shot if args.few_shot > 0 else -1
+            args.lr = lr if not args.prefix_tuning else 1e-4#0224#2e-3
+            if args.sub_task == 'small':
+                args.max_source_length = 130
+                args.max_target_length = 120
+            else:
+                args.max_source_length = 240
+                args.max_target_length = 240
+        elif args.task == 'generate':
+            args.data_num = args.few_shot if args.few_shot > 0 else -1
+            args.lr = lr if not args.prefix_tuning else 5e-4#0224#2e-3
+            args.max_source_length = 320
+            args.max_target_length = 150
+        elif args.task == 'complete':
+            args.data_num = args.few_shot if args.few_shot > 0 else -1
+            args.lr = 1e-5 if not args.prefix_tuning else 1e-4#1e-3
+            args.max_source_length = 256
+            args.max_target_length = 256
+        elif args.task == 'defect':
+            args.data_num = args.few_shot * 2 if args.few_shot > 0 else -1
+            args.lr = 8e-6 if not args.prefix_tuning else 5e-4#0224 #8e-6#8e-4
+            args.max_source_length = 512
+            args.max_target_length = 3  # as do not need to add lang ids
+        elif args.task == 'clone':
+            args.data_num = args.few_shot * 2 if args.few_shot > 0 else -1 
+            args.lr = lr if not args.prefix_tuning else 1e-4
+            args.max_source_length = 512#512#400
+            args.max_target_length = 512#512#400
 
     if args.few_shot == -1 or args.few_shot>=2048:
         if args.task in ['clone']:
-            args.num_train_epochs = 2# if not torch.cuda.is_available() else 2*torch.cuda.device_count()//2
+            args.num_train_epochs = 2 if not args.prefix_tuning else 1# if not torch.cuda.is_available() else 2*torch.cuda.device_count()//2
             #for clone BCB full data!!!
             if args.is_clone_sample:
                 args.num_train_epochs = args.num_train_epochs * 10
             args.patience = args.num_train_epochs*1000#min( 10, args.num_train_epochs//5*5)
         elif args.task in ['defect']:
-            args.num_train_epochs = 40 #if not torch.cuda.is_available() else 10*torch.cuda.device_count()//2*2
+            args.num_train_epochs = 120 if not args.prefix_tuning else 120 #old40 #if not torch.cuda.is_available() else 10*torch.cuda.device_count()//2*2
             # if args.is_clone_sample:
             #     args.num_train_epochs = args.num_train_epochs * 10
             args.patience = args.num_train_epochs*1000#min( 10, args.num_train_epochs//5*5)
-        else:
-            args.num_train_epochs = 60 if not torch.cuda.is_available() else 60*torch.cuda.device_count()//2
+        elif args.task in ['generate','translate','summarize']:
+            args.num_train_epochs = 30 if not torch.cuda.is_available() else 50*torch.cuda.device_count()#60
             args.patience = min( 10, args.num_train_epochs//5*2)
+        else:#refine
+            args.num_train_epochs = 30 if not torch.cuda.is_available() else 30*torch.cuda.device_count()#60
+            args.patience = min( 10, args.num_train_epochs//5*2)
+        # else:
+        #     args.num_train_epochs = 60 if not torch.cuda.is_available() else 60*torch.cuda.device_count()//2
+        #     args.patience = min( 10, args.num_train_epochs//5*2)
         if args.model_name in ['t5', 'codet5']:
             args.batch_size = 8  if not torch.cuda.is_available() else 8 * torch.cuda.device_count()
         elif args.model_name in ['bart', 'plbart']:
@@ -261,8 +276,15 @@ def set_hyperparas(args):
 
         # args.batch_size = 128 if args.model_name not in ['t5', 'codet5'] else 16
         args.warmup_steps = 1000
-        args.dev_batch_size = args.batch_size
-        args.test_batch_size = args.batch_size
+        args.dev_batch_size = args.batch_size * 1 if not torch.cuda.is_available() else args.batch_size//torch.cuda.device_count()*1
+        args.test_batch_size = args.batch_size * 1 if not torch.cuda.is_available() else args.batch_size//torch.cuda.device_count()*1
+        if args.task in ['refine','generate'] and args.model_name in ['bart', 'plbart']:#3090
+            if args.prefix_tuning:
+                args.dev_batch_size = args.dev_batch_size // 2 #4
+                args.test_batch_size = args.test_batch_size // 2
+            else:
+                args.dev_batch_size = args.dev_batch_size // 2
+                args.test_batch_size = args.test_batch_size // 2
 
     elif args.few_shot < 128: #16,32,64
         args.num_train_epochs = 64
