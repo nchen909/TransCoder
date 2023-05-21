@@ -99,10 +99,6 @@ def add_args(parser):
     
     parser.add_argument("--work_dir", type=str, default='TransCoder',
                         help='work dir')
-    parser.add_argument("--old_prefix_dir", default='old_data_prefix', type=str,
-                        help="directory to score graphmetadata.txt")
-    parser.add_argument("--prefix_dir", default='data_prefix', type=str,
-                        help="directory to score graphmetadata.txt")
     parser.add_argument("--prefix_token_level", default='token', type=str,
                         help="how to parse initial prefix code, choose 'token' or 'subtoken' level of ids/init_dist_weight")
     parser.add_argument("--gat_token_num", default=32, type=int,
@@ -120,15 +116,7 @@ def add_args(parser):
                     help="map_description or not ")
     parser.add_argument("--prefix_dropout", default=0.0, type=float,
                         help="prefix_dropout.")
-    parser.add_argument("--retriever_mode", default='retrieve', type=str,
-                        help="how to retrieve code piece to init GAT, choose from random or retrieve",
-                        choices=['random', 'retrieve','old'])
-    parser.add_argument("--qiangtamadeka", default=0, type=int,
-                    help="qiangtamadeka or not ")
-    parser.add_argument("--adjcency_mode", default='sast', type=str,
-                    help="how code distance matrix input as GAT adjcency matrix",choices=['fully-connected','sast'])
 
-    #######################注意改成真随机！！！！！！
 
     parser.add_argument("--meta_task", default='translate2cls', type=str,
             help="do meta task",
@@ -203,43 +191,43 @@ def set_hyperparas(args):
             args.lr = lr if not args.prefix_tuning else 1e-4#2e-3
             args.max_source_length = 256
             args.max_target_length = 128
-        elif args.task == 'translate':
-            args.data_num = args.few_shot if args.few_shot > 0 else -1
-            if args.model_name in ['t5', 'codet5'] and args.sub_task == 'java-cs':
-                args.lr = lr if not args.prefix_tuning else 5e-4#0224#2e-3
-            else:
-                args.lr = lr if not args.prefix_tuning else 1e-4#0224#2e-3
-            args.max_source_length = 320
-            args.max_target_length = 256
-        elif args.task == 'refine':
-            args.data_num = args.few_shot if args.few_shot > 0 else -1
-            args.lr = lr if not args.prefix_tuning else 1e-4#0224#2e-3
-            if args.sub_task == 'small':
-                args.max_source_length = 130
-                args.max_target_length = 120
-            else:
-                args.max_source_length = 240
-                args.max_target_length = 240
-        elif args.task == 'generate':
-            args.data_num = args.few_shot if args.few_shot > 0 else -1
+    elif args.task == 'translate':
+        args.data_num = args.few_shot if args.few_shot > 0 else -1
+        if args.model_name in ['t5', 'codet5'] and args.sub_task == 'java-cs':
             args.lr = lr if not args.prefix_tuning else 5e-4#0224#2e-3
-            args.max_source_length = 320
-            args.max_target_length = 150
-        elif args.task == 'complete':
-            args.data_num = args.few_shot if args.few_shot > 0 else -1
-            args.lr = 1e-5 if not args.prefix_tuning else 1e-4#1e-3
-            args.max_source_length = 256
-            args.max_target_length = 256
-        elif args.task == 'defect':
-            args.data_num = args.few_shot * 2 if args.few_shot > 0 else -1
-            args.lr = 8e-6 if not args.prefix_tuning else 5e-4#0224 #8e-6#8e-4
-            args.max_source_length = 512
-            args.max_target_length = 3  # as do not need to add lang ids
-        elif args.task == 'clone':
-            args.data_num = args.few_shot * 2 if args.few_shot > 0 else -1 
-            args.lr = lr if not args.prefix_tuning else 1e-4
-            args.max_source_length = 512#512#400
-            args.max_target_length = 512#512#400
+        else:
+            args.lr = lr if not args.prefix_tuning else 1e-4#0224#2e-3
+        args.max_source_length = 320
+        args.max_target_length = 256
+    elif args.task == 'refine':
+        args.data_num = args.few_shot if args.few_shot > 0 else -1
+        args.lr = lr if not args.prefix_tuning else 1e-4#0224#2e-3
+        if args.sub_task == 'small':
+            args.max_source_length = 130
+            args.max_target_length = 120
+        else:
+            args.max_source_length = 240
+            args.max_target_length = 240
+    elif args.task == 'generate':
+        args.data_num = args.few_shot if args.few_shot > 0 else -1
+        args.lr = lr if not args.prefix_tuning else 5e-4#0224#2e-3
+        args.max_source_length = 320
+        args.max_target_length = 150
+    elif args.task == 'complete':
+        args.data_num = args.few_shot if args.few_shot > 0 else -1
+        args.lr = 1e-5 if not args.prefix_tuning else 1e-4#1e-3
+        args.max_source_length = 256
+        args.max_target_length = 256
+    elif args.task == 'defect':
+        args.data_num = args.few_shot * 2 if args.few_shot > 0 else -1
+        args.lr = 8e-6 if not args.prefix_tuning else 5e-4#0224 #8e-6#8e-4
+        args.max_source_length = 512
+        args.max_target_length = 3  # as do not need to add lang ids
+    elif args.task == 'clone':
+        args.data_num = args.few_shot * 2 if args.few_shot > 0 else -1 
+        args.lr = lr if not args.prefix_tuning else 1e-4
+        args.max_source_length = 512#512#400
+        args.max_target_length = 512#512#400
 
     if args.few_shot == -1 or args.few_shot>=2048:
         if args.task in ['clone']:

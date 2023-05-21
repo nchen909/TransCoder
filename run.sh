@@ -1,7 +1,7 @@
 WORKDIR="/data/pretrain-attention/TransCoder"
-#WORKDIR="/wjn/projects/code/TransCoder"
+#WORKDIR="/cn/projects/code/TransCoder"
 HUGGINGFACE_LOCALS="/data/huggingface_models/"
-#HUGGINGFACE_LOCALS="/wjn/pre-trained-lm/"
+#HUGGINGFACE_LOCALS="/cn/pre-trained-lm/"
 export PYTHONPATH=$WORKDIR
 
 

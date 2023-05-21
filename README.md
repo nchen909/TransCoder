@@ -1,14 +1,5 @@
 # TransCoder
 
-https://blog.csdn.net/weixin_42392454/article/details/109891791
-
-https://blog.csdn.net/qq_36317312/article/details/121503795
-
-
-要跑的 (c32+6=12)(crosstask+crosslang) * 2(codet5&plbart) * 3(prefix_type= tuned random false只在codet5做？)*
-
-\>4(1% 5% 10% 100%)
-
 ## Environment & Preparing
 
 ```shell
@@ -50,13 +41,11 @@ export SUB_TASK=
 bash run.sh $MODEL_NAME $TASK $SUB_TASK
 # to run few shot
 bash run_few_shot.sh $MODEL_NAME $TASK $SUB_TASK
-# to run multi task
-bash run_multi_task.sh
 ```
 
   `MODEL_NAME` can be any one of `["roberta", "codebert", "graphcodebert", "unixcoder","t5","codet5","bart","plbart"]`.
 
-  `TASK` can be any one of `['summarize', 'translate', 'refine', 'generate', 'defect', 'clone']`. (generate refers concode in codexglue, and we don't consider complete)
+  `TASK` can be any one of `['summarize', 'translate', 'refine', 'generate', 'defect', 'clone']`. 
 
   `SUB_TASK` can be in picture below
 
@@ -69,30 +58,14 @@ bash run_multi_task.sh
 | C2C      | CodeTrans | translate         | ['java-cs', 'cs-java’]                            | end2end        | en2de    | code-to-code translation between[Java and C#](https://arxiv.org/pdf/2102.04664.pdf)                                             |
 | C2C      | Bugs2Fix  | refine(repair)    | ['small','medium'] (java)                          | end2end        | en2de    | code refinement on[code repair data](https://arxiv.org/pdf/1812.08693.pdf) with small/medium functions                          |
 | C2T      | CodeSN    | summarize         | ['java', 'python', 'javascript','php','ruby','go'] | end2end        | en2de    | code defect detection in[C/C++ data](https://proceedings.neurips.cc/paper/2019/file/49265d2447bc3bbfe9e76306ce40a31f-Paper.pdf) |
-| T2C      | CONCODE   | generate(concode) | [] (java)                                          | end2end        | en2de    | code clone detection in[Java data](https://arxiv.org/pdf/2002.08653.pdf)                                                        |
+| T2C      | CONCODE   | generate(concode) | [] (java)                                          | end2end        | en2de    | code clone detection in[Java data](https://arxiv.org/pdf/2002.08653.pdf)TransCoder                                              |
 
-## 所有消融脚本
+## Run TransCoder
 
-### parameter_efficient消融（只t5&bart）
+```bash
+export MODEL_NAME=
+export TASK=
+bash run_transcoder.sh $MODEL_NAME $TASK 
+```
 
-run.sh（full finetuning）
-
-run_adapter.sh
-
-run_bitfit.sh
-
-### prefix结构消融
-
-run_prefix_tuning.sh (MLP)
-
-run_gcn_tuning.sh (GCN)
-
-run_pass_tuning.sh (GAT)
-
-### 初始化
-
-run_random_selection.sh (without retriving)
-
-### 或许要调的
-
-gat_token_num
+`TASK` can be any one of `['cls2translate','translate2cls','cls2summarize','summarize2cls','translate2summarize','summarize2translate','cross2java','cross2php','cross2ruby','cross2python','cross2go','cross2javascript']`
